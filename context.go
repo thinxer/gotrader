@@ -21,7 +21,7 @@ type TradingContext struct {
 	orderbook *s.Orderbook
 }
 
-func MakeContext(c s.Client, p s.Pair) *TradingContext {
+func NewContext(c s.Client, p s.Pair) *TradingContext {
 	return &TradingContext{
 		Client:    c,
 		Pair:      p,
@@ -48,6 +48,10 @@ func (tc *TradingContext) StreamTo(trades chan s.Trade) {
 
 func (tc *TradingContext) Balance() map[s.Symbol]float64 {
 	return tc.balance
+}
+
+func (tc *TradingContext) Orderbook() *s.Orderbook {
+	return tc.orderbook
 }
 
 func (tc *TradingContext) Trade(tradeType s.TradeType, price, amount float64) (int64, error) {
@@ -95,7 +99,7 @@ func (tc *TradingContext) balanceRefresher() {
 	for tc.running {
 		b, err := tc.Client.Balance()
 		if err == nil {
-			tc.balance = b.Available
+			tc.balance = b
 		}
 		time.Sleep(time.Second * 2)
 	}

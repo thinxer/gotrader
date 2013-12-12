@@ -33,7 +33,7 @@ func (b *LevelBot) OperateOn(tc *TradingContext) {
 			b.trend = curLevel - b.level
 		}
 		b.level = curLevel
-		log.Printf("LevelBot: curLevel=%v, trend=%v, pos=%v, mpos=%v", curLevel, b.trend, b.position, b.maxPosition)
+		log.Printf("LevelBot: curLevel=%v, trend=%v, pos=%v of %v", curLevel, b.trend, b.position, b.maxPosition)
 		if b.trend < 0 && water < 0.9 && b.position > 0 {
 			amount := math.Min(b.step, b.position)
 			_, err := tc.Trade(s.Sell, lastPrice-float64(b.levelWidth/10), amount)
