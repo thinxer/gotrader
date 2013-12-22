@@ -1,0 +1,22 @@
+---
+  nodes:
+    - name: market
+      type: MarketStreamer
+      source: yes
+      config:
+        exchange: btcchina
+        pair: BTC/CNY
+        timeout: 10
+    - name: vma
+      type: VMA
+      requires:
+        - market
+      config:
+        volume: 30
+    - name: _
+      type: Logger
+      requires:
+        - market
+        - vma
+      config:
+        name: vma
