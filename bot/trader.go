@@ -13,7 +13,8 @@ type OrderSource interface {
 }
 
 type Trader struct {
-	tid, orderid int
+	tid     int
+	orderid int64
 
 	client s.Client
 	source OrderSource
@@ -50,6 +51,8 @@ func (t *Trader) Update(tid int) bool {
 		switch err := err.(type) {
 		case nil:
 			log.Printf("Trading with pair: %s, dir: %s, %f@%f succeeded, orderId: %d", t.pair, order.Type, order.Amount, order.Price, orderId)
+			t.tid = tid
+			t.orderid = orderId
 			return true
 		case s.TradeError:
 			log.Printf("Trading with pair: %s, dir: %s, %f@%f failed permanently, error: %v", t.pair, order.Type, order.Amount, order.Price, err)
@@ -61,7 +64,7 @@ func (t *Trader) Update(tid int) bool {
 	}
 }
 
-func (t *Trader) Value() (int, int) {
+func (t *Trader) Value() (int, int64) {
 	return t.tid, t.orderid
 }
 
