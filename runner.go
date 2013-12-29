@@ -4,11 +4,14 @@ import (
 	"github.com/thinxer/graphpipe"
 	"os"
 
-	_ "github.com/thinxer/gocoins/btcchina"
-	_ "github.com/thinxer/gocoins/btce"
+	// support libraries
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/thinxer/gocoins/all"
 
+	// Register various nodes
 	_ "github.com/thinxer/gotrader/analytic"
 	_ "github.com/thinxer/gotrader/bot"
+	_ "github.com/thinxer/gotrader/persistence"
 )
 
 func main() {

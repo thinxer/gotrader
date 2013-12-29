@@ -24,14 +24,14 @@ type FollowingBotConfig struct {
 	InitialPosition, MaxPosition, Width float64
 }
 
-func NewFollowingBot(config *FollowingBotConfig, source a.Float64Source) *FollowingBot {
+func NewFollowingBot(config *FollowingBotConfig, source a.Float64Source) (*FollowingBot, error) {
 	return &FollowingBot{
 		level:       -1,
 		position:    config.InitialPosition,
 		maxPosition: config.MaxPosition,
 		width:       config.Width,
 		source:      source,
-	}
+	}, nil
 }
 
 func (b *FollowingBot) Update(tid int) bool {

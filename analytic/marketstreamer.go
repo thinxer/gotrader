@@ -10,6 +10,7 @@ type MarketStreamer struct {
 	tid   int
 	value *s.Trade
 
+	since   int64
 	started bool
 	closed  bool
 	client  s.Client
@@ -21,20 +22,21 @@ type MarketStreamerConfig struct {
 	Exchange string
 	Pair     string
 	Timeout  int
+	Since    int64
 }
 
-func NewMarketStreamer(config *MarketStreamerConfig) *MarketStreamer {
+func NewMarketStreamer(config *MarketStreamerConfig) (*MarketStreamer, error) {
 	timeout := time.Duration(config.Timeout) * time.Second
 	client := s.New(config.Exchange, "", "", s.TimeoutTransport(timeout, timeout))
-	ms := &MarketStreamer{client: client, trades: make(chan s.Trade)}
+	ms := &MarketStreamer{client: client, trades: make(chan s.Trade), since: config.Since}
 	(&ms.pair).Set(config.Pair)
-	return ms
+	return ms, nil
 }
 
 func (m *MarketStreamer) Update(tid int) bool {
 	if !m.started {
 		m.started = true
-		go m.client.Stream(m.pair, -1, m.trades)
+		go m.client.Stream(m.pair, m.since, m.trades)
 	}
 	trade, ok := <-m.trades
 	if ok {

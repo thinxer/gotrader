@@ -28,7 +28,7 @@ type TraderConfig struct {
 	Pair           string
 }
 
-func NewTrader(config *TraderConfig, source OrderSource) *Trader {
+func NewTrader(config *TraderConfig, source OrderSource) (*Trader, error) {
 	timeout := time.Duration(config.Timeout) * time.Second
 	transport := s.TimeoutTransport(timeout, timeout)
 	client := s.New(config.Exchange, config.Apikey, config.Secret, transport)
@@ -36,11 +36,11 @@ func NewTrader(config *TraderConfig, source OrderSource) *Trader {
 	if err == nil {
 		log.Println(bal)
 	} else {
-		panic(err)
+		return nil, err
 	}
 	trader := &Trader{client: client, source: source}
 	(&trader.pair).Set(config.Pair)
-	return trader
+	return trader, nil
 }
 
 func (t *Trader) Update(tid int) bool {
