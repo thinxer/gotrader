@@ -1,9 +1,10 @@
 package analytic
 
 import (
+	"time"
+
 	s "github.com/thinxer/gocoins"
 	"github.com/thinxer/graphpipe"
-	"time"
 )
 
 type MarketStreamer struct {
@@ -25,7 +26,7 @@ type MarketStreamerConfig struct {
 	Since    int64
 }
 
-func NewMarketStreamer(config *MarketStreamerConfig) (*MarketStreamer, error) {
+func newMarketStreamer(config *MarketStreamerConfig) (*MarketStreamer, error) {
 	timeout := time.Duration(config.Timeout) * time.Second
 	client := s.New(config.Exchange, "", "", s.TimeoutTransport(timeout, timeout))
 	ms := &MarketStreamer{client: client, trades: make(chan s.Trade), since: config.Since}
@@ -57,5 +58,5 @@ func (m *MarketStreamer) Closed() bool {
 }
 
 func init() {
-	graphpipe.Regsiter("MarketStreamer", NewMarketStreamer)
+	graphpipe.Regsiter("MarketStreamer", newMarketStreamer)
 }

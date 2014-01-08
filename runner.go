@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/thinxer/graphpipe"
 	"os"
+	"github.com/thinxer/graphpipe"
 
 	// support libraries
 	_ "github.com/go-sql-driver/mysql"

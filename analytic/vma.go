@@ -19,7 +19,7 @@ type VMAConfig struct {
 	Volume float64
 }
 
-func NewVMA(config *VMAConfig, source TradeSource) (*VMA, error) {
+func newVMA(config *VMAConfig, source TradeSource) (*VMA, error) {
 	return &VMA{maxVol: config.Volume, source: source}, nil
 }
 
@@ -47,5 +47,5 @@ func (v *VMA) Closed() bool {
 }
 
 func init() {
-	graphpipe.Regsiter("VMA", NewVMA)
+	graphpipe.Regsiter("VMA", newVMA)
 }

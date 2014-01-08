@@ -32,7 +32,7 @@ type SQLWriterConfig struct {
 	TableName  string
 }
 
-func NewSQLWriter(config *SQLWriterConfig, source a.TradeSource) (*SQLWriter, error) {
+func newSQLWriter(config *SQLWriterConfig, source a.TradeSource) (*SQLWriter, error) {
 	db, err := sql.Open(config.Driver, config.DataSource)
 	if err != nil {
 		return nil, err
@@ -72,5 +72,5 @@ func (w *SQLWriter) Closed() bool {
 }
 
 func init() {
-	graphpipe.Regsiter("SQLWriter", NewSQLWriter)
+	graphpipe.Regsiter("SQLWriter", newSQLWriter)
 }

@@ -1,10 +1,11 @@
 package bot
 
 import (
-	s "github.com/thinxer/gocoins"
-	"github.com/thinxer/graphpipe"
 	"log"
 	"time"
+
+	s "github.com/thinxer/gocoins"
+	"github.com/thinxer/graphpipe"
 )
 
 type OrderSource interface {
@@ -28,7 +29,7 @@ type TraderConfig struct {
 	Pair           string
 }
 
-func NewTrader(config *TraderConfig, source OrderSource) (*Trader, error) {
+func newTrader(config *TraderConfig, source OrderSource) (*Trader, error) {
 	timeout := time.Duration(config.Timeout) * time.Second
 	transport := s.TimeoutTransport(timeout, timeout)
 	client := s.New(config.Exchange, config.Apikey, config.Secret, transport)
@@ -73,5 +74,5 @@ func (t *Trader) Closed() bool {
 }
 
 func init() {
-	graphpipe.Regsiter("Trader", NewTrader)
+	graphpipe.Regsiter("Trader", newTrader)
 }

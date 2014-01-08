@@ -1,10 +1,11 @@
 package bot
 
 import (
+	"log"
+
 	s "github.com/thinxer/gocoins"
 	a "github.com/thinxer/gotrader/analytic"
 	"github.com/thinxer/graphpipe"
-	"log"
 )
 
 type FollowingBot struct {
@@ -24,7 +25,7 @@ type FollowingBotConfig struct {
 	InitialPosition, MaxPosition, Width float64
 }
 
-func NewFollowingBot(config *FollowingBotConfig, source a.Float64Source) (*FollowingBot, error) {
+func newFollowingBot(config *FollowingBotConfig, source a.Float64Source) (*FollowingBot, error) {
 	return &FollowingBot{
 		level:       -1,
 		position:    config.InitialPosition,
@@ -93,5 +94,5 @@ func (f *FollowingBot) Closed() bool {
 }
 
 func init() {
-	graphpipe.Regsiter("FollowingBot", NewFollowingBot)
+	graphpipe.Regsiter("FollowingBot", newFollowingBot)
 }
