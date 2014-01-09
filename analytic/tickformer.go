@@ -1,18 +1,8 @@
 package analytic
 
-import (
-	s "github.com/thinxer/gocoins"
-	"github.com/thinxer/graphpipe"
-)
+import "github.com/thinxer/graphpipe"
 
-type Tick struct {
-	Pair                   s.Pair
-	Timestamp              int64
-	Open, Close, High, Low float64
-	Volume                 float64
-}
-
-// This thing will aggeragate Trades into Ticks (OHLCs).
+// This thing will aggregate Trades into Ticks (OHLCs).
 // Please be aware that empty ticks (volume=0) won't be outputed.
 type TickFormer struct {
 	tid   int
@@ -20,7 +10,10 @@ type TickFormer struct {
 
 	tempValue *Tick
 	tempStart int64
+	tempTid   int
 	interval  int64
+	closing   bool
+	closed    bool
 	source    TradeSource
 }
 
@@ -37,20 +30,30 @@ func (v *TickFormer) Update(_ int) bool {
 	if v.tempStart < 0 {
 		v.tempStart = trade.Timestamp
 	}
-	updated := false
-	if v.source.Closed() || (v.tempStart+int64(v.interval) < trade.Timestamp) {
-		v.value = v.tempValue
-		v.tid = tid
-		for v.tempStart+v.interval < trade.Timestamp {
+	if v.source.Closed() {
+		if v.closing {
+			v.closed = true
+			return false
+		} else {
+			v.closing = true
+		}
+	}
+
+	// output
+	updated := v.closing || v.tempStart+int64(v.interval) <= trade.Timestamp
+	if updated {
+		v.tid, v.value = v.tempTid, v.tempValue
+		for v.tempStart+v.interval <= trade.Timestamp {
 			v.tempStart += v.interval
 		}
-		updated = true
 	}
-	lastPrice := trade.Price
-	if v.tempValue != nil {
-		lastPrice = v.tempValue.Close
-	}
+
+	// aggregate
 	if updated || v.tempValue == nil {
+		lastPrice := trade.Price
+		if v.tempValue != nil {
+			lastPrice = v.tempValue.Close
+		}
 		v.tempValue = &Tick{Pair: trade.Pair, Timestamp: v.tempStart, Open: lastPrice, Close: lastPrice, High: lastPrice, Low: lastPrice, Volume: 0}
 	}
 	v.tempValue.Volume += trade.Amount
@@ -61,6 +64,7 @@ func (v *TickFormer) Update(_ int) bool {
 		v.tempValue.Low = trade.Price
 	}
 	v.tempValue.Close = trade.Price
+	v.tempTid = tid
 	return updated
 }
 
@@ -69,7 +73,7 @@ func (v *TickFormer) Value() (int, *Tick) {
 }
 
 func (v *TickFormer) Closed() bool {
-	return v.source.Closed()
+	return v.closed
 }
 
 func init() {
