@@ -1,4 +1,4 @@
-package persistence
+package access
 
 import (
 	"fmt"
@@ -21,36 +21,33 @@ CREATE TABLE IF NOT EXISTS %s (
 )
 
 type SQLWriter struct {
-	db       *sql.DB
 	inserter *sql.Stmt
 	source   a.TradeSource
 }
 
 type SQLWriterConfig struct {
-	Driver     string
-	DataSource string
-	TableName  string
+	TableName string
 }
 
-func newSQLWriter(config *SQLWriterConfig, source a.TradeSource) (*SQLWriter, error) {
-	db, err := sql.Open(config.Driver, config.DataSource)
-	if err != nil {
-		return nil, err
-	}
-
+func newSQLWriter(config *SQLWriterConfig, sql SQLService) (*SQLWriter, error) {
+	var err error
+	db := sql.DB()
 	_, err = db.Exec(fmt.Sprintf(tableCreateStmt, config.TableName))
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
 
 	inserter, err := db.Prepare(fmt.Sprintf(insertStmt, config.TableName))
 	if err != nil {
-		db.Close()
+		inserter.Close()
 		return nil, err
 	}
 
-	return &SQLWriter{db: db, inserter: inserter, source: source}, nil
+	return &SQLWriter{inserter: inserter}, nil
+}
+
+func (s *SQLWriter) SetInput(source a.TradeSource) {
+	s.source = source
 }
 
 func (w *SQLWriter) Update(tid int) bool {
@@ -65,7 +62,6 @@ func (w *SQLWriter) Update(tid int) bool {
 func (w *SQLWriter) Closed() bool {
 	if w.source.Closed() {
 		// Close methods are idempotent.
-		w.db.Close()
 		w.inserter.Close()
 	}
 	return w.source.Closed()

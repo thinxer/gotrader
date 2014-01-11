@@ -1,4 +1,4 @@
-package analytic
+package access
 
 import (
 	"time"
@@ -26,10 +26,10 @@ type MarketStreamerConfig struct {
 	Since    int64
 }
 
-func newMarketStreamer(config *MarketStreamerConfig) (*MarketStreamer, error) {
+func newMarketStreamer(config *MarketStreamerConfig, last int) (*MarketStreamer, error) {
 	timeout := time.Duration(config.Timeout) * time.Second
 	client := s.New(config.Exchange, "", "", s.TimeoutTransport(timeout, timeout))
-	ms := &MarketStreamer{client: client, trades: make(chan s.Trade), since: config.Since}
+	ms := &MarketStreamer{client: client, trades: make(chan s.Trade), since: int64(last)}
 	(&ms.pair).Set(config.Pair)
 	return ms, nil
 }

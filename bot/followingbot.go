@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"log"
+	"fmt"
 
 	s "github.com/thinxer/gocoins"
 	a "github.com/thinxer/gotrader/analytic"
@@ -17,29 +17,42 @@ type FollowingBot struct {
 	width       float64
 	position    float64
 	maxPosition float64
+	pair        s.Pair
 
 	source a.Float64Source
 }
 
 type FollowingBotConfig struct {
 	InitialPosition, MaxPosition, Width float64
+	Pair                                string
 }
 
-func newFollowingBot(config *FollowingBotConfig, source a.Float64Source) (*FollowingBot, error) {
-	return &FollowingBot{
+func newFollowingBot(config *FollowingBotConfig) (*FollowingBot, error) {
+	b := &FollowingBot{
 		level:       -1,
 		position:    config.InitialPosition,
 		maxPosition: config.MaxPosition,
 		width:       config.Width,
-		source:      source,
-	}, nil
+	}
+	(&b.pair).Set(config.Pair)
+	return b, nil
 }
 
-func (b *FollowingBot) Update(tid int) bool {
+func (f *FollowingBot) SetInput(source a.Float64Source) {
+	f.source = source
+}
+
+func (b *FollowingBot) Update(tid int) (ret bool) {
+	defer func() {
+		if ret {
+			fmt.Printf("FollowingBot: level=%v, pos=%v of %v\n", b.level, b.position, b.maxPosition)
+		}
+	}()
 	if tid == 0 {
 		// palce test order
 		b.tid = 0
 		b.value = &s.Order{
+			Pair:   b.pair,
 			Type:   s.Buy,
 			Price:  0.01,
 			Amount: 0.01,
@@ -58,7 +71,9 @@ func (b *FollowingBot) Update(tid int) bool {
 		if lastPrice > b.level+b.width {
 			if b.position < b.maxPosition {
 				amount := b.maxPosition - b.position
+				b.tid = tid
 				b.value = &s.Order{
+					Pair:   b.pair,
 					Type:   s.Buy,
 					Price:  lastPrice * 1.1,
 					Amount: amount,
@@ -70,7 +85,9 @@ func (b *FollowingBot) Update(tid int) bool {
 		} else if lastPrice < b.level-b.width {
 			if b.position > 0 {
 				amount := b.position
+				b.tid = tid
 				b.value = &s.Order{
+					Pair:   b.pair,
 					Type:   s.Sell,
 					Price:  lastPrice * 0.9,
 					Amount: amount,
@@ -81,7 +98,6 @@ func (b *FollowingBot) Update(tid int) bool {
 			return true
 		}
 	}
-	log.Printf("FollowingBot: level=%v, pos=%v of %v", b.level, b.position, b.maxPosition)
 	return false
 }
 

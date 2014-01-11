@@ -9,9 +9,9 @@ import (
 	_ "github.com/thinxer/gocoins/all"
 
 	// Register various nodes
+	_ "github.com/thinxer/gotrader/access"
 	_ "github.com/thinxer/gotrader/analytic"
 	_ "github.com/thinxer/gotrader/bot"
-	_ "github.com/thinxer/gotrader/persistence"
 )
 
 func main() {

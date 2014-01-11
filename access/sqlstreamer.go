@@ -1,4 +1,4 @@
-package analytic
+package access
 
 import (
 	"database/sql"
@@ -20,20 +20,13 @@ type SQLStreamer struct {
 }
 
 type SQLStreamerConfig struct {
-	Driver     string
-	DataSource string
-	TableName  string
-	Pair       string
-	Since      int64
+	TableName string
+	Pair      string
 }
 
-// TODO when to Close the DB?
-func newSQLStreamer(config *SQLStreamerConfig) (*SQLStreamer, error) {
-	db, err := sql.Open(config.Driver, config.DataSource)
-	if err != nil {
-		return nil, err
-	}
-	query, err := db.Query(fmt.Sprintf(findStmt, config.TableName), config.Since)
+func newSQLStreamer(config *SQLStreamerConfig, sql SQLService, since int) (*SQLStreamer, error) {
+	db := sql.DB()
+	query, err := db.Query(fmt.Sprintf(findStmt, config.TableName), since)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +43,7 @@ func (m *SQLStreamer) Update(tid int) bool {
 		m.value = &trade
 		return true
 	} else {
+		m.query.Close()
 		m.closed = true
 		return false
 	}

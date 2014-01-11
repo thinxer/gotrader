@@ -21,8 +21,12 @@ type TickFormerConfig struct {
 	Interval int
 }
 
-func newTickFormer(config *TickFormerConfig, source TradeSource) (*TickFormer, error) {
-	return &TickFormer{source: source, interval: int64(config.Interval), tempStart: -1}, nil
+func newTickFormer(config *TickFormerConfig) (*TickFormer, error) {
+	return &TickFormer{interval: int64(config.Interval), tempStart: -1}, nil
+}
+
+func (t *TickFormer) SetInput(source TradeSource) {
+	t.source = source
 }
 
 func (v *TickFormer) Update(_ int) bool {

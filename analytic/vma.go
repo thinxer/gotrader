@@ -19,8 +19,12 @@ type VMAConfig struct {
 	Volume float64
 }
 
-func newVMA(config *VMAConfig, source TradeSource) (*VMA, error) {
-	return &VMA{maxVol: config.Volume, source: source}, nil
+func newVMA(config *VMAConfig) (*VMA, error) {
+	return &VMA{maxVol: config.Volume}, nil
+}
+
+func (v *VMA) SetInput(source TradeSource) {
+	v.source = source
 }
 
 func (v *VMA) Update(tid int) bool {

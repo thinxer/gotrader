@@ -20,8 +20,12 @@ type TickCombinerConfig struct {
 	Interval int
 }
 
-func newTickCombiner(config *TickCombinerConfig, source TickSource) (*TickCombiner, error) {
-	return &TickCombiner{source: source, interval: int64(config.Interval), tempStart: -1}, nil
+func newTickCombiner(config *TickCombinerConfig) (*TickCombiner, error) {
+	return &TickCombiner{interval: int64(config.Interval), tempStart: -1}, nil
+}
+
+func (t *TickCombiner) SetInput(source TickSource) {
+	t.source = source
 }
 
 func (v *TickCombiner) Update(_ int) bool {
