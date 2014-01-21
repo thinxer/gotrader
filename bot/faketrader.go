@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/thinxer/graphpipe"
 
-	s "github.com/thinxer/gocoins"
+	s "github.com/thinxer/coincross"
 	a "github.com/thinxer/gotrader/analytic"
 )
 

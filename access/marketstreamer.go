@@ -3,7 +3,7 @@ package access
 import (
 	"time"
 
-	s "github.com/thinxer/gocoins"
+	s "github.com/thinxer/coincross"
 	"github.com/thinxer/graphpipe"
 )
 
@@ -11,12 +11,8 @@ type MarketStreamer struct {
 	tid   int
 	value *s.Trade
 
-	since   int64
-	started bool
-	closed  bool
-	client  s.Client
-	pair    s.Pair
-	trades  chan s.Trade
+	closed bool
+	trades <-chan s.Trade
 }
 
 type MarketStreamerConfig struct {
@@ -26,19 +22,16 @@ type MarketStreamerConfig struct {
 	Since    int64
 }
 
-func newMarketStreamer(config *MarketStreamerConfig, last int) (*MarketStreamer, error) {
+func newMarketStreamer(config *MarketStreamerConfig, since int) (*MarketStreamer, error) {
 	timeout := time.Duration(config.Timeout) * time.Second
 	client := s.New(config.Exchange, "", "", s.TimeoutTransport(timeout, timeout))
-	ms := &MarketStreamer{client: client, trades: make(chan s.Trade), since: int64(last)}
-	(&ms.pair).Set(config.Pair)
-	return ms, nil
+	var pair s.Pair
+	(&pair).Set(config.Pair)
+	m := &MarketStreamer{trades: client.Stream(pair, int64(since)).C}
+	return m, nil
 }
 
 func (m *MarketStreamer) Update(tid int) bool {
-	if !m.started {
-		m.started = true
-		go m.client.Stream(m.pair, m.since, m.trades)
-	}
 	trade, ok := <-m.trades
 	if ok {
 		m.tid, m.value = tid, &trade

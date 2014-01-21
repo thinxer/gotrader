@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	s "github.com/thinxer/gocoins"
+	s "github.com/thinxer/coincross"
 	"github.com/thinxer/graphpipe"
 )
 

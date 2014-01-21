@@ -6,7 +6,7 @@ import (
 
 	// support libraries
 	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/thinxer/gocoins/all"
+	_ "github.com/thinxer/coincross/all"
 
 	// Register various nodes
 	_ "github.com/thinxer/gotrader/access"

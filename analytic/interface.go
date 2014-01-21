@@ -1,7 +1,7 @@
 package analytic
 
 import (
-	s "github.com/thinxer/gocoins"
+	s "github.com/thinxer/coincross"
 )
 
 type Tick struct {

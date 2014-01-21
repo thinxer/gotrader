@@ -3,7 +3,7 @@ package bot
 import (
 	"fmt"
 
-	s "github.com/thinxer/gocoins"
+	s "github.com/thinxer/coincross"
 	a "github.com/thinxer/gotrader/analytic"
 	"github.com/thinxer/graphpipe"
 )

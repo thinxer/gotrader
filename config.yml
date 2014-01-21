@@ -1,21 +1,28 @@
 ---
+  verbose: yes
+  services:
+    - name: last
+      type: Int
+      config: -1
   nodes:
     - name: market
       type: MarketStreamer
       source: yes
+      inject:
+        - last
       config:
         exchange: btcchina
         pair: BTC/CNY
         timeout: 10
     - name: vma
       type: VMA
-      requires:
+      input:
         - market
       config:
         volume: 30
     - name: _
       type: Logger
-      requires:
+      input:
         - market
         - vma
       config:
