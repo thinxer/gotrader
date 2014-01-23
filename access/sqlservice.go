@@ -6,20 +6,12 @@ import (
 	"github.com/thinxer/graphpipe"
 )
 
-type SQLService interface {
-	DB() *sql.DB
-}
-
-type SQLProvider struct {
-	db *sql.DB
-}
-
 type SQLProviderConfig struct {
 	Driver     string
 	DataSource string
 }
 
-func newSQLProvider(config *SQLProviderConfig) (*SQLProvider, error) {
+func newSQLProvider(config *SQLProviderConfig) (*sql.DB, error) {
 	db, err := sql.Open(config.Driver, config.DataSource)
 	if err != nil {
 		return nil, err
@@ -28,11 +20,7 @@ func newSQLProvider(config *SQLProviderConfig) (*SQLProvider, error) {
 		db.Close()
 		return nil, err
 	}
-	return &SQLProvider{db}, nil
-}
-
-func (s *SQLProvider) DB() *sql.DB {
-	return s.db
+	return db, nil
 }
 
 func init() {

@@ -27,7 +27,7 @@ func (v *VMA) SetInput(source TradeSource) {
 	v.source = source
 }
 
-func (v *VMA) Update(tid int) bool {
+func (v *VMA) Update(tid int) graphpipe.Result {
 	tid, trade := v.source.Value()
 	for v.vol > v.maxVol {
 		v.vol -= v.trades[0].Amount
@@ -39,7 +39,7 @@ func (v *VMA) Update(tid int) bool {
 	v.vol += trade.Amount
 
 	v.tid, v.value = tid, v.sum/v.vol
-	return true
+	return graphpipe.Update
 }
 
 func (v *VMA) Value() (int, float64) {

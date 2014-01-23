@@ -42,9 +42,9 @@ func (f *FollowingBot) SetInput(source a.Float64Source) {
 	f.source = source
 }
 
-func (b *FollowingBot) Update(tid int) (ret bool) {
+func (b *FollowingBot) Update(tid int) (ret graphpipe.Result) {
 	defer func() {
-		if ret {
+		if ret != graphpipe.Skip {
 			fmt.Printf("FollowingBot: level=%v, pos=%v of %v\n", b.level, b.position, b.maxPosition)
 		}
 	}()
@@ -57,12 +57,12 @@ func (b *FollowingBot) Update(tid int) (ret bool) {
 			Price:  0.01,
 			Amount: 0.01,
 		}
-		return true
+		return graphpipe.Update
 	}
 	_, lastPrice := b.source.Value()
 	if b.level < 0 {
 		b.level = lastPrice
-		return false
+		return graphpipe.Skip
 	} else if b.position == b.maxPosition && lastPrice > b.level {
 		b.level = lastPrice
 	} else if b.position == 0 && lastPrice < b.level {
@@ -81,7 +81,7 @@ func (b *FollowingBot) Update(tid int) (ret bool) {
 				b.position = b.position + amount
 			}
 			b.level = lastPrice
-			return true
+			return graphpipe.Update
 		} else if lastPrice < b.level-b.width {
 			if b.position > 0 {
 				amount := b.position
@@ -95,10 +95,10 @@ func (b *FollowingBot) Update(tid int) (ret bool) {
 				b.position = b.position - amount
 			}
 			b.level = lastPrice
-			return true
+			return graphpipe.Update
 		}
 	}
-	return false
+	return graphpipe.Skip
 }
 
 func (f *FollowingBot) Value() (int, *s.Order) {

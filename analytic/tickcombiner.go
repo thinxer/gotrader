@@ -1,3 +1,5 @@
+// +build ignore
+
 package analytic
 
 import "github.com/thinxer/graphpipe"
@@ -28,7 +30,7 @@ func (t *TickCombiner) SetInput(source TickSource) {
 	t.source = source
 }
 
-func (v *TickCombiner) Update(_ int) bool {
+func (v *TickCombiner) Update(_ int) graphpipe.Result {
 	tid, tick := v.source.Value()
 	if v.tempStart < 0 {
 		v.tempStart = tick.Timestamp
@@ -37,15 +39,15 @@ func (v *TickCombiner) Update(_ int) bool {
 	if v.source.Closed() {
 		if v.closing {
 			v.closed = true
-			return false
+			return graphpipe.Skip
 		} else {
 			v.closing = true
 		}
 	}
 
 	// output
-	udpate := v.closing || v.tempStart+int64(v.interval) <= tick.Timestamp
-	if udpate {
+	updated := v.closing || v.tempStart+int64(v.interval) <= tick.Timestamp
+	if updated {
 		v.tid, v.value = v.tempTid, v.tempValue
 		for v.tempStart+v.interval <= tick.Timestamp {
 			v.tempStart += v.interval
@@ -53,7 +55,7 @@ func (v *TickCombiner) Update(_ int) bool {
 	}
 
 	// aggregate
-	if udpate || v.tempValue == nil {
+	if updated || v.tempValue == nil {
 		// Make a copy of tick
 		newTick := *tick
 		v.tempValue = &newTick
@@ -67,7 +69,11 @@ func (v *TickCombiner) Update(_ int) bool {
 	}
 	v.tempValue.Close = tick.Close
 	v.tempTid = tid
-	return udpate
+
+	if updated {
+		return graphpipe.Update
+	}
+	return graphpipe.Skip
 }
 
 func (v *TickCombiner) Value() (int, *Tick) {

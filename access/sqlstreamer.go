@@ -8,11 +8,10 @@ import (
 	"github.com/thinxer/graphpipe"
 )
 
-var findStmt = `SELECT id, timestamp, type, price, amount FROM %s WHERE id >= ?;`
-
 type SQLStreamer struct {
-	tid   int
-	value *s.Trade
+	tid     int
+	value   *s.Trade
+	pending chan *s.Trade
 
 	query  *sql.Rows
 	closed bool
@@ -24,29 +23,43 @@ type SQLStreamerConfig struct {
 	Pair      string
 }
 
-func newSQLStreamer(config *SQLStreamerConfig, sql SQLService, since int) (*SQLStreamer, error) {
-	db := sql.DB()
-	query, err := db.Query(fmt.Sprintf(findStmt, config.TableName), since)
+func newSQLStreamer(config *SQLStreamerConfig, db *sql.DB, since, limit int) (*SQLStreamer, error) {
+	q := fmt.Sprintf(`SELECT id, timestamp, type, price, amount FROM %s WHERE id >= ?`, config.TableName)
+	params := []interface{}{since}
+	if limit > 0 {
+		q = q + " LIMIT ?"
+		params = append(params, limit)
+	}
+	query, err := db.Query(q, params...)
 	if err != nil {
 		return nil, err
 	}
-	ms := &SQLStreamer{query: query}
+	ms := &SQLStreamer{query: query, pending: make(chan *s.Trade, 4096)}
 	(&ms.pair).Set(config.Pair)
 	return ms, nil
 }
 
-func (m *SQLStreamer) Update(tid int) bool {
-	if m.query.Next() {
-		m.tid = tid
+func (m *SQLStreamer) Start(ch chan bool) {
+	for m.query.Next() {
 		trade := s.Trade{Pair: m.pair}
 		m.query.Scan(&trade.Id, &trade.Timestamp, &trade.Type, &trade.Price, &trade.Amount)
-		m.value = &trade
-		return true
-	} else {
-		m.query.Close()
-		m.closed = true
-		return false
+		m.pending <- &trade
+		ch <- true
 	}
+	m.query.Close()
+	close(m.pending)
+	ch <- true
+	close(ch)
+}
+
+func (m *SQLStreamer) Update(tid int) graphpipe.Result {
+	t, ok := <-m.pending
+	if ok {
+		m.tid, m.value = tid, t
+	} else {
+		m.closed = true
+	}
+	return graphpipe.Update
 }
 
 func (m *SQLStreamer) Value() (int, *s.Trade) {

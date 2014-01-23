@@ -1,12 +1,13 @@
 package analytic
 
 import (
+	"time"
 	s "github.com/thinxer/coincross"
 )
 
 type Tick struct {
 	Pair                   s.Pair
-	Timestamp              int64
+	Timestamp              time.Time
 	Open, Close, High, Low float64
 	Volume                 float64
 }

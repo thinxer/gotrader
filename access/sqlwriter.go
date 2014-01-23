@@ -29,9 +29,8 @@ type SQLWriterConfig struct {
 	TableName string
 }
 
-func newSQLWriter(config *SQLWriterConfig, sql SQLService) (*SQLWriter, error) {
+func newSQLWriter(config *SQLWriterConfig, db *sql.DB) (*SQLWriter, error) {
 	var err error
-	db := sql.DB()
 	_, err = db.Exec(fmt.Sprintf(tableCreateStmt, config.TableName))
 	if err != nil {
 		return nil, err
@@ -50,13 +49,13 @@ func (s *SQLWriter) SetInput(source a.TradeSource) {
 	s.source = source
 }
 
-func (w *SQLWriter) Update(tid int) bool {
+func (w *SQLWriter) Update(tid int) graphpipe.Result {
 	_, t := w.source.Value()
 	_, err := w.inserter.Exec(t.Id, t.Timestamp, int(t.Type), t.Price, t.Amount)
 	if err != nil {
 		panic(err)
 	}
-	return false
+	return graphpipe.Skip
 }
 
 func (w *SQLWriter) Closed() bool {

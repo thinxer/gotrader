@@ -1,6 +1,10 @@
 package analytic
 
-import "github.com/thinxer/graphpipe"
+import (
+	"time"
+
+	"github.com/thinxer/graphpipe"
+)
 
 // This thing will aggregate Trades into Ticks (OHLCs).
 // Please be aware that empty ticks (volume=0) won't be outputed.
@@ -9,12 +13,15 @@ type TickFormer struct {
 	value *Tick
 
 	tempValue *Tick
-	tempStart int64
-	tempTid   int
-	interval  int64
-	closing   bool
-	closed    bool
-	source    TradeSource
+	nextTick  time.Time
+	pending   []*Tick
+	realtime  bool
+
+	closing bool
+	closed  bool
+	source  TradeSource
+
+	interval time.Duration
 }
 
 type TickFormerConfig struct {
@@ -22,54 +29,78 @@ type TickFormerConfig struct {
 }
 
 func newTickFormer(config *TickFormerConfig) (*TickFormer, error) {
-	return &TickFormer{interval: int64(config.Interval), tempStart: -1}, nil
+	return &TickFormer{interval: time.Duration(config.Interval) * time.Second}, nil
 }
 
-func (t *TickFormer) SetInput(source TradeSource) {
+func (t *TickFormer) SetInput(source TradeSource, timer graphpipe.NilSource) {
 	t.source = source
+	// No need to set timer, as it's only used to wake up this.
 }
 
-func (v *TickFormer) Update(_ int) bool {
-	tid, trade := v.source.Value()
-	if v.tempStart < 0 {
-		v.tempStart = trade.Timestamp
+func (v *TickFormer) Update(tid int) graphpipe.Result {
+	stid, trade := v.source.Value()
+	if v.closed {
+		return graphpipe.Skip
+	} else if v.closing {
+		v.closed = true
+		return graphpipe.Update
+	} else if v.source.Closed() {
+		v.tid, v.value = tid, v.tempValue
+		v.closing = true
+		return graphpipe.Update | graphpipe.More
 	}
-	if v.source.Closed() {
-		if v.closing {
-			v.closed = true
-			return false
-		} else {
-			v.closing = true
+
+	now := time.Now()
+	var tradeTime time.Time
+	if trade != nil {
+		tradeTime = time.Unix(trade.Timestamp, 0)
+	}
+
+	// init
+	if v.nextTick.IsZero() {
+		if stid == tid {
+			v.nextTick = tradeTime.Add(v.interval)
+			price := trade.Price
+			v.tempValue = &Tick{Pair: trade.Pair, Timestamp: tradeTime, Open: price, Close: price, High: price, Low: price, Volume: trade.Amount}
 		}
+		return graphpipe.Skip
 	}
 
 	// output
-	updated := v.closing || v.tempStart+int64(v.interval) <= trade.Timestamp
-	if updated {
-		v.tid, v.value = v.tempTid, v.tempValue
-		for v.tempStart+v.interval <= trade.Timestamp {
-			v.tempStart += v.interval
-		}
-	}
+	for (v.realtime && v.nextTick.Before(now)) ||
+		(!v.realtime && stid == tid && v.nextTick.Before(tradeTime)) {
 
-	// aggregate
-	if updated || v.tempValue == nil {
-		lastPrice := trade.Price
-		if v.tempValue != nil {
-			lastPrice = v.tempValue.Close
+		v.pending = append(v.pending, v.tempValue)
+		price := v.tempValue.Close
+		v.tempValue = &Tick{Pair: trade.Pair, Timestamp: v.nextTick, Open: price, Close: price, High: price, Low: price, Volume: 0}
+		v.nextTick = v.nextTick.Add(v.interval)
+		if v.nextTick.After(now) {
+			v.realtime = true
 		}
-		v.tempValue = &Tick{Pair: trade.Pair, Timestamp: v.tempStart, Open: lastPrice, Close: lastPrice, High: lastPrice, Low: lastPrice, Volume: 0}
 	}
-	v.tempValue.Volume += trade.Amount
-	if v.tempValue.High < trade.Price {
-		v.tempValue.High = trade.Price
+	// update tick
+	if stid == tid {
+		v.tempValue.Volume += trade.Amount
+		if v.tempValue.High < trade.Price {
+			v.tempValue.High = trade.Price
+		}
+		if v.tempValue.Low > trade.Price {
+			v.tempValue.Low = trade.Price
+		}
+		v.tempValue.Close = trade.Price
 	}
-	if v.tempValue.Low > trade.Price {
-		v.tempValue.Low = trade.Price
+	// output
+	if len(v.pending) > 0 {
+		v.tid, v.value = tid, v.pending[0]
+		v.pending = v.pending[1:]
+		if len(v.pending) > 0 {
+			return graphpipe.Update | graphpipe.More
+		} else {
+			return graphpipe.Update
+		}
+	} else {
+		return graphpipe.Skip
 	}
-	v.tempValue.Close = trade.Price
-	v.tempTid = tid
-	return updated
 }
 
 func (v *TickFormer) Value() (int, *Tick) {

@@ -30,7 +30,7 @@ func (f *FakeTrader) SetInput(market a.TickSource, order OrderSource) {
 	f.order = order
 }
 
-func (f *FakeTrader) Update(tid int) (updated bool) {
+func (f *FakeTrader) Update(tid int) (updated graphpipe.Result) {
 	ordertid, order := f.order.Value()
 	if ordertid > f.lastOrder {
 		f.lastOrder = ordertid
@@ -38,7 +38,7 @@ func (f *FakeTrader) Update(tid int) (updated bool) {
 	}
 	tickid, tick := f.market.Value()
 	if tickid == 0 {
-		return false
+		return graphpipe.Skip
 	}
 	i := 0
 	for i < len(f.orders) {
@@ -52,7 +52,7 @@ func (f *FakeTrader) Update(tid int) (updated bool) {
 			f.balance[o.Pair.Target] += o.Amount
 			f.balance[o.Pair.Base] -= o.Amount * price
 			f.orders = append(f.orders[:i], f.orders[i+1:]...)
-			updated = true
+			updated = graphpipe.Update
 		} else if o.Type == s.Sell && price <= tick.High {
 			if price < tick.Low {
 				price = tick.Low
@@ -60,12 +60,12 @@ func (f *FakeTrader) Update(tid int) (updated bool) {
 			f.balance[o.Pair.Target] -= o.Amount
 			f.balance[o.Pair.Base] += o.Amount * price
 			f.orders = append(f.orders[:i], f.orders[i+1:]...)
-			updated = true
+			updated = graphpipe.Update
 		} else {
 			i++
 		}
 	}
-	if updated {
+	if updated != graphpipe.Skip {
 		if len(f.orders) > 0 {
 			fmt.Println("orders:", f.orders)
 		}
